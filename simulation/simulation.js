@@ -6,31 +6,39 @@ class Clock {
 		this.cols = 5;
 	}
 
+	drawBar(ctx, column, bgcolor, cells) {
+		const ps = this.pixelSize;
+		const top = (this.height - (cells.length*ps)) / 2;
+		const left = (this.width / this.cols) * (column + 1) - ps / 2;
+
+		for (var i = 0; i < cells.length; i++) {
+			ctx.fillStyle = bgcolor;
+			ctx.fillRect(left, top + ps * i, ps, ps);
+
+			ctx.beginPath();
+			ctx.fillStyle=cells[i];
+			ctx.arc(left + ps/2, top + ps*i+ps/2, ps/2, 0, 2 * Math.PI, false);
+			ctx.fill();
+		}
+	}
+
 	drawMinutes(ctx) {
 		const d = new Date();
 		const min = d.getMinutes();
 		const ps = this.pixelSize;
 
-		const lmin = ((this.width / this.cols) * 2) - this.pixelSize / 2;
-		const tmin = (this.height - (30*this.pixelSize)) / 2;
+		const cells = [];
 
 		for (var i = 0; i < 30; i++) {
-			ctx.fillStyle='#aaaaaa';
-			ctx.fillRect(lmin, tmin + ps*i, ps, ps);
-
-			ctx.beginPath();
 			const curMin = min/2.0;
-			console.log(curMin);
 			if (curMin > 30 - i) {
-				ctx.fillStyle="green";
-			// } else if (curHour == hour) {
-				// ctx.fillStyle = 'rgb(0, ' + ((min/60) * 255) + ', 0)'
+				cells.push("green");
 			} else {
-				ctx.fillStyle="gray";
+				cells.push("gray");
 			}
-			ctx.arc(lmin + ps/2, tmin + ps*i+ps/2, ps/2, 0, 2 * Math.PI, false);
-			ctx.fill();
 		}
+
+		this.drawBar(ctx, 1, "#aaaaaa", cells);
 	}
 
 	drawHours(ctx) {

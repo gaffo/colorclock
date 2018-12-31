@@ -6,10 +6,20 @@ class Clock {
 		this.cols = 5;
 	}
 
+	top(column, cCells) {
+		const ps = this.pixelSize;
+		return (this.height - (cCells*ps)) / 2;
+	}
+
+	left(column) {
+		const ps = this.pixelSize;
+		return (this.width / this.cols) * (column + 1) - ps / 2;
+	}
+
 	drawBar(ctx, column, bgcolor, cells) {
 		const ps = this.pixelSize;
-		const top = (this.height - (cells.length*ps)) / 2;
-		const left = (this.width / this.cols) * (column + 1) - ps / 2;
+		const top = this.top(column, cells.length);
+		const left = this.left(column);
 
 		for (var i = 0; i < cells.length; i++) {
 			ctx.fillStyle = bgcolor;
@@ -22,10 +32,42 @@ class Clock {
 		}
 	}
 
+	drawTicks(ctx, column, color, cCells, tickCells, over) {
+		const ps = this.pixelSize;
+		const top = this.top(column, cCells);
+		const left = this.left(column);
+		const xBuffer = 4;
+		const height = 4;
+
+		ctx.fillStyle = color;
+		tickCells.forEach(value => {
+			var x = left - ps - xBuffer;
+			const y = top + (value * ps) + ps / 2 - height / 2;
+			var width = ps;
+
+			if (over) {
+				x += ps;
+				width += xBuffer * 2;
+			}
+
+			ctx.fillRect(x, y, width, height);
+		});
+	}
+
+	drawSegmentTicks(ctx, column, color, cCells, segments, over) {
+		const segSize = cCells / 6;
+		const tickCells = [];
+		for (var i = 1; i < segments; i++) {
+			tickCells.push(i * segSize);
+		}
+		this.drawTicks(ctx, column, color, cCells, tickCells, over);
+	}
+
 	drawMinutes(ctx) {
 		const d = new Date();
 		const min = d.getMinutes();
 		const ps = this.pixelSize;
+		const column = 1;
 
 		const cells = [];
 
@@ -38,43 +80,34 @@ class Clock {
 			}
 		}
 
-		this.drawBar(ctx, 1, "#aaaaaa", cells);
+		this.drawBar(ctx, column, "#aaaaaa", cells);
+		this.drawSegmentTicks(ctx, column, "rgb(200,200,200)", cells.length, 6, true);
 	}
 
 	drawHours(ctx) {
 		// Days
-		const hday = this.pixelSize;
-		const wday = hday;
-
-		const lday = (this.width / this.cols) - this.pixelSize / 2;
-		const tday = (this.height - (24*hday)) / 2;
-
 		const d = new Date();
 		const hour = d.getHours();
 		const min = d.getMinutes();
+		const column = 0;
+
+		const cells = [];
 
 		for (var i = 0; i < 24; i++) {
-			ctx.lineWidth=0;
-
-			// fill the background square
-			ctx.fillStyle='#aaaaaa';
-			ctx.fillRect(lday, tday + wday*i, wday, hday);
-
-			// draw the light
-			ctx.beginPath();
-
 			// hour position is inverted
 			const curHour = 24 - i;
 			if (curHour < hour) {
+				cells.push("green");
 				ctx.fillStyle="green";
 			} else if (curHour == hour) {
-				ctx.fillStyle = 'rgb(0, ' + ((min/60) * 255) + ', 0)'
+				cells.push('rgb(0, ' + ((min/60) * 255) + ', 0)');
 			} else {
-				ctx.fillStyle="gray";
+				cells.push("gray");
 			}
-			ctx.arc(lday + wday/2, tday + hday*i+hday/2, hday/2, 0, 2 * Math.PI, false);
-			ctx.fill();
 		}
+		this.drawBar(ctx, column, "#aaaaaa", cells);
+
+		this.drawSegmentTicks(ctx, column, "rgb(200,200,200)", cells.length, 6, true);
 	}
 
 	draw(ctx) {
@@ -83,6 +116,13 @@ class Clock {
 		ctx.drawImage(wood, 0, 0, this.width, this.height);
 		this.drawHours(ctx);
 		this.drawMinutes(ctx);
+
+		const colors = [];
+		for (var i = 0; i < 30; i++) {
+			colors.push("gray");
+		}
+		this.drawBar(ctx, 2, "#aaaaaa", colors);
+		this.drawBar(ctx, 3, "#aaaaaa", colors);
 	}
 }
 

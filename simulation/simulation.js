@@ -1,9 +1,18 @@
+Number.prototype.map = function (in_min, in_max, out_min, out_max) {
+  return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 class Clock {
-	constructor(width, height, images){
+	constructor(width, height, images, minTemp, maxTemp, minWind, maxWind){
 		this.width = width;
 		this.height = height;
 		this.pixelSize = this.height / 32;
 		this.cols = 5;
+		this.minTemp = minTemp;
+		this.maxTemp = maxTemp;
+		this.temp = 0;
+		this.minWind = minWind;
+		this.maxWind = maxWind;
 	}
 
 	top(column, cCells) {
@@ -84,6 +93,40 @@ class Clock {
 		this.drawSegmentTicks(ctx, column, "rgb(200,200,200)", cells.length, 6, true);
 	}
 
+	drawTemp(ctx) {
+		if (this.temp == null) {
+			return;
+		}
+		const selected = 30 - this.temp.map(this.minTemp, this.maxTemp, 0, 30);
+		const cells = [];
+		for (var i = 0; i < 30; i++) {
+			if (i < selected) {
+				cells.push("gray");
+			} else {
+				cells.push('blue');
+			}
+		}
+		this.drawBar(ctx, 2, "#aaa", cells);
+		this.drawSegmentTicks(ctx, 2, "rgb(200,200,200)", cells.length, 6, true);
+	}
+
+	drawWind(ctx) {
+		if (this.wind == null) {
+			return;
+		}
+		const selected = 30 - this.wind.map(this.minWind, this.maxWind, 0, 30);
+		const cells = [];
+		for (var i = 0; i < 30; i++) {
+			if (i < selected) {
+				cells.push("gray");
+			} else {
+				cells.push('orange');
+			}
+		}
+		this.drawBar(ctx, 3, "#aaa", cells);
+		this.drawSegmentTicks(ctx, 3, "rgb(200,200,200)", cells.length, 6, true);
+	}
+
 	drawHours(ctx) {
 		// Days
 		const d = new Date();
@@ -116,17 +159,34 @@ class Clock {
 		ctx.drawImage(wood, 0, 0, this.width, this.height);
 		this.drawHours(ctx);
 		this.drawMinutes(ctx);
+		this.drawTemp(ctx);
+		this.drawWind(ctx);
 
 		const colors = [];
 		for (var i = 0; i < 30; i++) {
 			colors.push("gray");
 		}
-		this.drawBar(ctx, 2, "#aaaaaa", colors);
-		this.drawBar(ctx, 3, "#aaaaaa", colors);
 	}
 }
 
-const clock = new Clock(300, 700, ["wood"]);
+function k2f(k) {
+  return k * (9/5) - 459.67;
+}
+
+const clock = new Clock(300, 700, ["wood"], 20, 90, 0, 30);
+
+var xhr = new XMLHttpRequest();
+xhr.open('GET', "http://api.openweathermap.org/data/2.5/weather?id=5809844&APPID=eba0b2940f9c54532614bebad6c2bf56", true);
+xhr.responseType = 'json';
+xhr.onload = function() {
+  var status = xhr.status;
+  if (status === 200) {
+  	clock.temp = k2f(xhr.response["main"]["temp"]);
+  	clock.wind = xhr.response["wind"]["speed"];
+  	loaded();
+  }
+};
+xhr.send();
 
 function loaded() {
 	const canvas = document.getElementById("my-house");
